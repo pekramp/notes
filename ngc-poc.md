@@ -256,7 +256,7 @@ time oc mirror --config=imageset-config.yaml docker://ec2-18-216-214-86.us-east-
 #Writing CatalogSource manifests to oc-mirror-workspace/results-1682046532
 #Writing ICSP manifests to oc-mirror-workspace/results-1682046532
 
-#eal    25m39.673s
+#real    25m39.673s
 #user    6m9.616s
 #sys     2m59.360s
 
@@ -288,11 +288,12 @@ openshift-install create install-config --dir <installation_directory>
 Customize resources
 Add mirror information 
 Add additionalTrustedBundle
+Confirm PullSecret has mirror registry info
 
 ## Sample install-config
 ```
 ---
-additionalTrustBundlePolicy: Proxyonly
+additionalTrustBundlePolicy: Always
 apiVersion: v1
 baseDomain: redhatgov.io
 compute:
@@ -329,7 +330,7 @@ platform:
     userTags:
       adminContact: pkramp
 publish: External
-pullSecret: '{"auths":{"cloud.openshift.com":{"auth":"b3B"pkramp@redhat.com"}}}'
+pullSecret: '{"auths":{"cloud.openshift.com":{"auth":"b3B.............."pkramp@redhat.com"}}}'
 sshKey: |
   ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBMnrXX3IFuW0mCL1VGiDhjrvOG9AeE0jydJaeuodugX2Enbl/mC8tpBUrUrsGT68jPB1FOe3JgRJHqIbB4jYKwc= ec2-user@ec2-18-216-214-86.us-east-2.compute.amazonaws.com
 additionalTrustBundle: |
@@ -369,7 +370,9 @@ imageContentSources:
 ```
 
 ## Backup install-config
-Copy to a backup directory before running
+:::info
+****Copy to a backup directory before running****
+:::
 
 ## Run install
 ```
@@ -380,21 +383,22 @@ time openshift-install create cluster --dir aws-install --log-level=info
 INFO Credentials loaded from the "default" profile in file "/home/ec2-user/.aws/credentials"
 INFO Consuming Install Config from target directory
 INFO Creating infrastructure resources...
-INFO Waiting up to 20m0s (until 3:59AM) for the Kubernetes API at https://api.ocp412ngc.redhatgov.io:6443...
+INFO Waiting up to 20m0s (until 4:12PM) for the Kubernetes API at https://api.ocp412ngc.redhatgov.io:6443...
 INFO API v1.25.8+27e744f up
-INFO Waiting up to 30m0s (until 4:10AM) for bootstrapping to complete...
+INFO Waiting up to 30m0s (until 4:23PM) for bootstrapping to complete...
 INFO Destroying the bootstrap resources...
-INFO Waiting up to 40m0s (until 4:31AM) for the cluster at https://api.ocp412ngc.redhatgov.io:6443 to initialize...
+INFO Waiting up to 40m0s (until 4:44PM) for the cluster at https://api.ocp412ngc.redhatgov.io:6443 to initialize...
 INFO Checking to see if there is a route at openshift-console/console...
 INFO Install complete!
 INFO To access the cluster as the system:admin user when using 'oc', run 'export KUBECONFIG=/home/ec2-user/aws-install/auth/kubeconfig'
 INFO Access the OpenShift web-console here: https://console-openshift-console.apps.ocp412ngc.redhatgov.io
-INFO Login to the console with user: "kubeadmin", and password: "52sXv-SVrqE-N7sNv-EEDRR"
-INFO Time elapsed: 27m5s
+INFO Login to the console with user: "kubeadmin", and password: "qrPRj-nWGSZ-zjeAU-qWQw9"
+INFO Time elapsed: 29m1s
 
-real    27m5.010s
-user    0m42.029s
-sys     0m2.547s
+real    29m0.825s
+user    0m42.379s
+sys     0m2.654s
+
 
 ```
 ### Disable the default OperatorHub Catalog Sources
@@ -412,6 +416,32 @@ oc get catalogsource --all-namespaces
 oc create -f oc-mirror-workspace/results-1682046532/catalogSource-redhat-operator-index.yaml
 
 #catalogsource.operators.coreos.com/redhat-operator-index created
+```
+
+### Troubleshooting
+```
+oc create configmap trusted-ca-list --from-file=ca-bundle.crt=rootCA.pem -n openshift-config
+
+oc patch proxy/cluster --type=merge -p '{"spec":{"trustedCA":{"name":"trusted-ca-list"}}}'
+
+#Wait for reboot
+
+#Check pullsecret 
+oc get secret/pull-secret -n openshift-config --template='{{index .data ".dockerconfigjson" | base64decode}}' >ngcpull.json
+
+#Copy
+cp ngcpull.json ngc-updated-pull.json
+
+#If missing can add with 
+oc registry login --registry="https://ec2-18-216-214-86.us-east-2.compute.amazonaws.com:8443" --auth-basic="admin:3yHyHFb9ELEavGixZG846" --to=ngc-updated-pull.json
+
+#Replace
+oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=ngc-updated-pull.json
+
+#delete catalog source
+oc get catalogsource --all-namespaces
+oc delete catalogsource redhat-operator-index -n openshift-marketplace
+
 ```
 
 ## Destroy cluster
