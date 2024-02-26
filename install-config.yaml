@@ -1,7 +1,7 @@
 ---
 additionalTrustBundlePolicy: Always
 apiVersion: v1
-baseDomain: redhatgov.io
+baseDomain: example.com
 compute:
 - architecture: amd64
   name: worker
