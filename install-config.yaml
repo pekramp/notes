@@ -1,0 +1,63 @@
+---
+additionalTrustBundlePolicy: Always
+apiVersion: v1
+baseDomain: redhatgov.io
+compute:
+- architecture: amd64
+  name: worker
+  replicas: 0
+controlPlane:
+  architecture: amd64
+  name: master
+  platform:
+  replicas: 1
+metadata:
+  creationTimestamp: null
+  name: sno-cluster
+networking:
+  clusterNetwork:
+  - cidr: 10.128.0.0/14
+    hostPrefix: 23
+  machineNetwork:
+  - cidr: 10.0.0.0/16
+  networkType: OVNKubernetes
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+  none: {}
+pullSecret: '{"auths":{"cloud.openshift.com":{"auth":"b3B.............."pkramp@redhat.com"}}}'
+sshKey: |
+  ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBMnrXX3IFuW0mCL1VGiDhjrvOG9AeE0jydJaeuodugX2Enbl/mC8tpBUrUrsGT68jPB1FOe3JgRJHqIbB4jYKwc= ec2-user@ec2-18-216-214-86.us-east-2.compute.amazonaws.com
+additionalTrustBundle: |
+  -----BEGIN CERTIFICATE-----
+  MIIEPTCCAyWgAwIBAgIUX7jN/sfBvpDPPi+hwpc10UcB2h8wDQYJKoZIhvcNAQEL
+  BQAwgYsxCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJWQTERMA8GA1UEBwwITmV3IFlv
+  cmsxDTALBgNVBAoMBFF1YXkxETAPBgNVBAsMCERpdmlzaW9uMTowOAYDVQQDDDFl
+  YzItMTgtMjE2LTIxNC04Ni51cy1lYXN0LTIuY29tcHV0ZS5hbWF6b25hd3MuY29t
+  MB4XDTIzMDQyMDIyNDk0NloXDTI2MDIwNzIyNDk0NlowgYsxCzAJBgNVBAYTAlVT
+  MQswCQYDVQQIDAJWQTERMA8GA1UEBwwITmV3IFlvcmsxDTALBgNVBAoMBFF1YXkx
+  ETAPBgNVBAsMCERpdmlzaW9uMTowOAYDVQQDDDFlYzItMTgtMjE2LTIxNC04Ni51
+  cy1lYXN0LTIuY29tcHV0ZS5hbWF6b25hd3MuY29tMIIBIjANBgkqhkiG9w0BAQEF
+  AAOCAQ8AMIIBCgKCAQEA60xdQlOcVH8Hh/de5hZjypLa3OMEEoRXOM7jN9XRaUXr
+  VhywW48b5RSSufPUBPDIrN+WxNlHG1nydOQF0jyxOte8r3qDes71WZNRaOOZzyDT
+  rwC2CUonw9zxgnbgLKt148E1DFVP0DPvPJA3lwbbIUGRR16BOG+SbNFRwsdRBYJ7
+  AoYBag+akruUfHSAoqk5prOOsbb0LMZT71baiIZctIBDvo3xlvIF1ZWhc5Xm1D4o
+  M4HO0nczA/MNpbFRpu/xTlnm28103ADBEOLxI6/Bx5NOBPA4YwMBsX2VHd+hfc0/
+  PcsyZiC9y4MMAEvxqfFllIDncLQPns4v52SoK0ERFQIDAQABo4GWMIGTMAsGA1Ud
+  DwQEAwIC5DATBgNVHSUEDDAKBggrBgEFBQcDATA8BgNVHREENTAzgjFlYzItMTgt
+  MjE2LTIxNC04Ni51cy1lYXN0LTIuY29tcHV0ZS5hbWF6b25hd3MuY29tMBIGA1Ud
+  EwEB/wQIMAYBAf8CAQEwHQYDVR0OBBYEFP0++4S6z3Ytn3hmBDaoEYqcuxlIMA0G
+  CSqGSIb3DQEBCwUAA4IBAQA0514SEnp88b+hq2ADANmPq84cEFq2nO86T7FpKEhq
+  bqH+T8zhGk015Nl4Yca3g7E9RnRROrrRA9bWInNy6C+CwVsxyTIHoc2uOzGjS+cr
+  9Tb1D4eCZ8ok4KHrZks3GkGYq8c62vFfee10Aj3x25fSiAzakD1q8H4IXOcvRDF+
+  s8A4EHhwu0mVXASFZ32SIEV+dKYbTWV4r8NCFd/aEJI6w1GilBfKhhnBl57hS8ZW
+  wvcXj6HTtLmSx65ScykWB1Fp0Gbzuvt9DtpPJ/OFe48AGECmKwp5HEB+lLouf6kJ
+  NRsUZrye9cnovP8yIDVReSL1Bg+3/kvIpmNeOv6Lu9Hs
+  -----END CERTIFICATE-----
+imageContentSources:
+- mirrors:
+  - openshift-repo.example.com:8443/414-mirror/openshift/release
+  source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+- mirrors:
+  - openshift-repo.example.com:8443/414-mirror/openshift/release-images
+  source: quay.io/openshift-release-dev/ocp-release
