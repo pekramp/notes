@@ -1,4 +1,4 @@
-# Installing ngc-poc simulated ocp disconnected in aws step-by-step
+# Installing baremetal sno (single node openshift) ocp disconnected step-by-step
 Setup server
 ```
 #register system
@@ -23,17 +23,24 @@ sudo tar xzf openshift-install-linux.tar.gz -C /usr/local/sbin openshift-install
 #validate client and install version and platform
 oc version
 openshift-install version
-
+```
+:::info
+Ensure architecture matches the target destination aarch64 for arm or amd64 for x86_64
+:::
+```
 #set hostname to  external dns name 
-sudo  nmcli general openshift-repo.example.com
+sudo  nmcli general hostname openshift-repo.example.com
 
 ```
 
 Making an offline installation bundle for OpenShift requires [mirroring/downloading the container images](https://docs.openshift.com/container-platform/4.14/installing/disconnected_install/installing-mirroring-disconnected.html) and then [hosting those container images in a container registry](https://docs.openshift.com/container-platform/4.14/installing/disconnected_install/installing-mirroring-creating-registry.html) that is accessible by the cluster nodes. The download process can put the container images into the local filesystem or upload them directly into the container registry. (a USB stick, a directory that will be burnt to a DVD, or a folder that will be uploaded into S3 or similar storage)
 
 :::info
-A minimal download of OpenShift 4.14 requires ~15GB of space
-A minimal download of OpenShift Platform Plus requires ~50GB of space
+A minimal download of OpenShift 4.14 requires ~15GB of space.
+
+A minimal download of OpenShift Platform Plus requires ~50GB of space.
+
+A full download of All OpenShift Operators and versions can be close to 1TB.
 :::
 
 Lots of good information in this blog - [Mirroring OpenShift Registries: The Easy Way by Ben Schmaus and Daniel Messer (August 23, 2022)](https://cloud.redhat.com/blog/mirroring-openshift-registries-the-easy-way).
@@ -219,6 +226,7 @@ mirror:
 ```
 
 ## Run the oc-mirror
+If you are partially disconnected do the following:
 ```
 #prerun 
 #df -h
@@ -244,6 +252,18 @@ time oc mirror --config=imageset-config.yaml docker://openshift-repo.example.com
 #/ avail 25G
 
 ```
+If you are fully disconnected do the following:
+```
+oc mirror --config=./imageset-config.yaml file://<path_to_output_directory> 
+
+ls <path_to_output_directory>
+mirror_seq1_000000.tar
+```
+Copy to disconnected environment through approved channels, then on disconnected side:
+```
+oc mirror --from=./mirror_seq1_000000.tar docker://openshift-repo.example.com:8443/414-mirror 
+```
+
 ## Get the mirror info for install
 ```
 #cat mirror file
