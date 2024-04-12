@@ -3,49 +3,35 @@ apiVersion: mirror.openshift.io/v1alpha2
 archiveSize: 4
 storageConfig:
   local:
-    path: storageconfig
+    path: storageoperator
 mirror:
-  platform:
-    channels:
-    - name: stable-4.14
-      type: ocp
-    graph: true
   operators:
-  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.14
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.15
     packages:
-    - name: kubevirt-hyperconverged
+    - name: quay-bridge-operator
       channels:
-        - name: stable
-    - name: kubernetes-nmstate-operator
-      channels:
-        - name: stable
-    - name: cincinnati-operator
-      channels:
-        - name: v1
-    - name: compliance-operator
-      channels:
-        - name: stable
-    - name: mtv-operator
-      channels:
-        - name: release-v2.5
-    - name: odf-operator
-      channels:
-        - name: stable-4.14
-    - name: web-terminal
-      channels:
-        - name: fast
+        - name: stable-3.10
     - name: quay-operator
       channels:
         - name: stable-3.10
+    - name: cincinnati-operator
+      channels:
+        - name: v1
+    - name: cluster-logging
+      channels:
+        - name: stable-5.8
+    - name: compliance-operator
+      channels:
+        - name: stable
+    - name: web-terminal
+      channels:
+        - name: fast
     - name: file-integrity-operator
       channels:
         - name: stable
-    - name: lvms-operator
-      channels:
-        - name: stable-4.14
     - name: ocs-operator
       channels:
-        - name: stable-4.14
+        - name: stable-4.15
     - name: local-storage-operator
       channels:
         - name: stable
