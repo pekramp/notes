@@ -1,10 +1,15 @@
 kind: ImageSetConfiguration
 apiVersion: mirror.openshift.io/v1alpha2
 archiveSize: 4
-storageConfig:
-  local:
-    path: storageoperator
 mirror:
+  platform:
+    architectures:
+      - amd64
+    channels:
+    - name: stable-4.15
+      type: ocp
+      minVersion: 4.15.12
+    graph: true
   operators:
   - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.15
     packages:
