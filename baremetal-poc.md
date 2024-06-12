@@ -9,14 +9,17 @@ subscription-manager auto-attach
 sudo dnf update
 sudo dnf install /usr/bin/nmstatectl -y
 
-#grab oc
-wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz
+#grab oc 
+#rhel9
+wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux-amd64-rhel9.tar.gz
+#rhel8
+wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux-amd64-rhel8.tar.gz
 
 #grab openshift-install
 wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux.tar.gz
 
 #Extract the client and place in into the path
-sudo tar xzf openshift-client-linux.tar.gz -C /usr/local/sbin/ oc kubectl
+sudo tar xzf openshift-client-linux*.tar.gz -C /usr/local/sbin/ oc kubectl
 
 sudo tar xzf openshift-install-linux.tar.gz -C /usr/local/sbin openshift-install
 
@@ -33,10 +36,10 @@ sudo  nmcli general hostname openshift-repo.example.com
 
 ```
 
-Making an offline installation bundle for OpenShift requires [mirroring/downloading the container images](https://docs.openshift.com/container-platform/4.14/installing/disconnected_install/installing-mirroring-disconnected.html) and then [hosting those container images in a container registry](https://docs.openshift.com/container-platform/4.14/installing/disconnected_install/installing-mirroring-creating-registry.html) that is accessible by the cluster nodes. The download process can put the container images into the local filesystem or upload them directly into the container registry. (a USB stick, a directory that will be burnt to a DVD, or a folder that will be uploaded into S3 or similar storage)
+Making an offline installation bundle for OpenShift requires [mirroring/downloading the container images](https://docs.openshift.com/container-platform/4.15/installing/disconnected_install/installing-mirroring-disconnected.html) and then [hosting those container images in a container registry](https://docs.openshift.com/container-platform/4.15/installing/disconnected_install/installing-mirroring-creating-registry.html) that is accessible by the cluster nodes. The download process can put the container images into the local filesystem or upload them directly into the container registry. (a USB stick, a directory that will be burnt to a DVD, or a folder that will be uploaded into S3 or similar storage)
 
 :::info
-A minimal download of OpenShift 4.14 requires ~15GB of space.
+A minimal download of OpenShift 4.15 requires ~15GB of space.
 
 A minimal download of OpenShift Platform Plus requires ~50GB of space.
 
@@ -57,18 +60,22 @@ api.snow-cluster.example.com
 *.apps.snow-cluster.example.com
 
 ## Install `mirror-registry` (aka mini Quay)
+:::info
+Recommend running these commands as root then you can login as any user
+:::
+
 ```
 #pull down and extra mirror-registry
 wget https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/mirror-registry/latest/mirror-registry.tar.gz
 
 tar xvzf mirror-registry.tar.gz
 
-./mirror-registry install --help
+sudo ./mirror-registry install --help
 
 
 #setup
 ### password must be at least 8 characters and contain no whitespace
-./mirror-registry install --quayRoot /data/mirror-registry --quayStorage /data/mirror-registry --initUser admin --initPassword 3yHyHFb9ELEavGixZG846
+sudo ./mirror-registry install --quayRoot /data/mirror-registry --quayStorage /data/mirror-registry --initUser admin --initPassword 3yHyHFb9ELEavGixZG846
 ```
 :::info
 INFO[2023-04-20 14:39:12] Quay installed successfully, config data is stored in ~/quay-install
@@ -80,11 +87,12 @@ INFO[2023-04-20 14:39:12] Quay is available at https://openshift-repo.example.co
 sudo cp -v /data/mirror-registry/quay-rootCA/rootCA.pem /etc/pki/ca-trust/source/anchors/
 sudo update-ca-trust
 
-#optional cleanup if restarting
+#****optional cleanup if restarting****
 sudo rm /etc/pki/ca-trust/source/anchors/rootCA.pem
 sudo update-ca-trust
+#****optional cleanup if restarting****
 
-
+#test login
 podman login -u admin -p 3yHyHFb9ELEavGixZG846 $(hostname -f):8443
 ```
 ### Starting and stopping the `mirror-registry`
@@ -139,23 +147,23 @@ cp -v $HOME/.docker/config.json ~/pull-secret.json
 ## Setup mirror registry file
 ```
 oc-mirror list releases
-oc-mirror list releases --version 4.14 --channels
+oc-mirror list releases --version 4.15 --channels
 
 oc-mirror list operators
-oc-mirror list operators --version 4.14 --catalogs
-oc-mirror list operators --version 4.14 \
-    --catalog registry.redhat.io/redhat/redhat-operator-index:v4.14 \
+oc-mirror list operators --version 4.15 --catalogs
+oc-mirror list operators --version 4.15 \
+    --catalog registry.redhat.io/redhat/redhat-operator-index:v4.15 \
     --package odf-operator \
-    --channel stable-4.14
+    --channel stable-4.15
 
 
 oc-mirror init | tee imageset-config.yaml
 vi imageset-config.yaml
 
 #find channels to slim down
-podman pull registry.redhat.io/redhat/redhat-operator-index:v4.14
+podman pull registry.redhat.io/redhat/redhat-operator-index:v4.15
 podman unshare
-cd $(podman image mount registry.redhat.io/redhat/redhat-operator-index:v4.14)
+cd $(podman image mount registry.redhat.io/redhat/redhat-operator-index:v4.15)
 ls configs
 
 jq .name configs/*/catalog.json
@@ -165,6 +173,9 @@ jq . configs/advanced-cluster-management/catalog.json | less -i
 
 #list channels
 jq '.schema, .name' configs/advanced-cluster-management/catalog.json
+
+#When done exit the POD
+exit
 ```
 ## Sample [imageset-config.yaml](https://raw.githubusercontent.com/pekramp/notes/main/imageset-config.yaml?token=GHSAT0AAAAAACOYPAFY4UBYFHCRKZNL7GDYZO44ITQ)
 ```
@@ -172,51 +183,42 @@ jq '.schema, .name' configs/advanced-cluster-management/catalog.json
 kind: ImageSetConfiguration
 apiVersion: mirror.openshift.io/v1alpha2
 archiveSize: 4
-storageConfig:
-  local:
-    path: storageconfig
 mirror:
   platform:
+    architectures:
+      - amd64
     channels:
-    - name: stable-4.14
+    - name: stable-4.15
       type: ocp
+      minVersion: 4.15.12
     graph: true
   operators:
-  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.14
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.15
     packages:
-    - name: kubevirt-hyperconverged
+    - name: quay-bridge-operator
       channels:
-        - name: stable
-    - name: kubernetes-nmstate-operator
-      channels:
-        - name: stable
-    - name: cincinnati-operator
-      channels:
-        - name: v1
-    - name: compliance-operator
-      channels:
-        - name: stable
-    - name: mtv-operator
-      channels:
-        - name: release-v2.5
-    - name: odf-operator
-      channels:
-        - name: stable-4.14
-    - name: web-terminal
-      channels:
-        - name: fast
+        - name: stable-3.10
     - name: quay-operator
       channels:
         - name: stable-3.10
+    - name: cincinnati-operator
+      channels:
+        - name: v1
+    - name: cluster-logging
+      channels:
+        - name: stable-5.8
+    - name: compliance-operator
+      channels:
+        - name: stable
+    - name: web-terminal
+      channels:
+        - name: fast
     - name: file-integrity-operator
       channels:
         - name: stable
-    - name: lvms-operator
-      channels:
-        - name: stable-4.14
     - name: ocs-operator
       channels:
-        - name: stable-4.14
+        - name: stable-4.15
     - name: local-storage-operator
       channels:
         - name: stable
@@ -233,11 +235,11 @@ If you are partially disconnected do the following:
 #/ avail 88G
 
 #fill the registry
-time oc mirror --config=imageset-config.yaml docker://openshift-repo.example.com:8443/414-mirror
+time oc mirror --config=imageset-config.yaml docker://openshift-repo.example.com:8443/415-mirror
 
 #time 
 #info: Mirroring completed in 19m53.06s (56.23MB/s)
-#Rendering catalog image "openshift-repo.example.com:8443/414-mirror/redhat/redhat-operator-index:v4.12" with file-based catalog
+#Rendering catalog image "openshift-repo.example.com:8443/415-mirror/redhat/redhat-operator-index:v4.12" with file-based catalog
 #Writing image mapping to oc-mirror-workspace/results-1682046532/mapping.txt
 #Writing UpdateService manifests to oc-mirror-workspace/results-1682046532
 #Writing CatalogSource manifests to oc-mirror-workspace/results-1682046532
@@ -254,14 +256,14 @@ time oc mirror --config=imageset-config.yaml docker://openshift-repo.example.com
 ```
 If you are fully disconnected do the following:
 ```
-oc mirror --config=./imageset-config.yaml file://<path_to_output_directory> 
+oc mirror --config=imageset-config.yaml file://<path_to_output_directory> 
 
 ls <path_to_output_directory>
 mirror_seq1_000000.tar
 ```
 Copy to disconnected environment through approved channels, then on disconnected side:
 ```
-oc mirror --from=./mirror_seq1_000000.tar docker://openshift-repo.example.com:8443/414-mirror 
+oc mirror --from=./mirror_seq1_000000.tar docker://openshift-repo.example.com:8443/415-mirror 
 ```
 
 ## Get the mirror info for install
@@ -270,10 +272,10 @@ oc mirror --from=./mirror_seq1_000000.tar docker://openshift-repo.example.com:84
 cat oc-mirror-workspace/results-1682046532/imageContentSourcePolicy.yaml
 ---
 - mirrors:
-  - openshift-repo.example.com:8443/414-mirror/openshift/release
+  - openshift-repo.example.com:8443/415-mirror/openshift/release
   source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
 - mirrors:
-  - openshift-repo.example.com:8443/414-mirror/openshift/release-images
+  - openshift-repo.example.com:8443/415-mirror/openshift/release-images
   source: quay.io/openshift-release-dev/ocp-release
 
 
@@ -349,10 +351,10 @@ additionalTrustBundle: |
   -----END CERTIFICATE-----
 imageContentSources:
 - mirrors:
-  - openshift-repo.example.com:8443/414-mirror/openshift/release
+  - openshift-repo.example.com:8443/415-mirror/openshift/release
   source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
 - mirrors:
-  - openshift-repo.example.com:8443/414-mirror/openshift/release-images
+  - openshift-repo.example.com:8443/415-mirror/openshift/release-images
   source: quay.io/openshift-release-dev/ocp-release
 
 ```
@@ -405,23 +407,23 @@ hosts:
 
 ## Make the agent-based ISO image and boot
 ```
-mkdir ocp414install/
-cp ocp414install-backup/install-config.yaml ocp414install/install-config.yaml
+mkdir ocp415install/
+cp ocp415install-backup/install-config.yaml ocp415install/install-config.yaml
 
-cp ocp414install-backup/agent-config.yaml ocp414install/agent-config.yaml
+cp ocp415install-backup/agent-config.yaml ocp415install/agent-config.yaml
 
 #create iso
-openshift-install --dir=ocp414install agent create image
+openshift-install --dir=ocp415install agent create image
 #use iso to boot target box
 
 #watch install boostrapping
-openshift-install --dir=ocp414install agent wait-for bootstrap-complete --log-level=debug
+openshift-install --dir=ocp415install agent wait-for bootstrap-complete --log-level=debug
 #watch install complete
-openshift-install --dir=ocp414install agent wait-for install-complete --log-level=debug
+openshift-install --dir=ocp415install agent wait-for install-complete --log-level=debug
 
 #OUTPUT
 INFO Install complete!
-INFO To access the cluster as the system:admin user when using 'oc', run 'export KUBECONFIG=/home/myuser/ocp414install/auth/kubeconfig'
+INFO To access the cluster as the system:admin user when using 'oc', run 'export KUBECONFIG=/home/myuser/ocp415install/auth/kubeconfig'
 INFO Access the OpenShift web-console here: https://console-openshift-console.apps.sno-cluster.example.com
 INFO Login to the console with user: "kubeadmin", and password: "qrPRj-nWGSZ-zjeAU-qWQw9"
 
