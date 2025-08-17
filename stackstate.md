@@ -19,8 +19,12 @@ List all the steps of your process
     1. i.e. XXXXX-XXXXX-XXXXX
 3. Go to terminals
 ## CloudConfig
+If running into max open files errors
 ```
 #cloud-config
+password: superpassword
+chpasswd: { expire: False }
+ssh_pwauth: True
 package_update: true
 packages:
   - qemu-guest-agent
